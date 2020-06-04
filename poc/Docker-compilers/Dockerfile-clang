@@ -1,0 +1,16 @@
+#--- Alpine build container ---
+FROM debian:latest
+
+RUN apt-get update && \
+    apt-get install -y autoconf automake git libjansson-dev libssl-dev \
+    pkg-config rsync libcurl4-openssl-dev libxml2-dev build-essential llvm clang
+
+# Volume that must be mounted, it must contain the source code
+VOLUME "/source"
+
+# The code will be copied from "source" to here by the script
+RUN mkdir /tmp/source
+COPY fort_make_w_cc.sh /tmp/source/fort_make.sh
+
+WORKDIR /tmp/source
+ENTRYPOINT ["/tmp/source/fort_make.sh", "clang"]

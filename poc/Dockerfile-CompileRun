@@ -1,0 +1,43 @@
+#--- Alpine build container ---
+FROM alpine:latest AS builder
+ARG GIT_BRANCH="1.3.0"
+
+# Install compiler and dependencies
+RUN apk --update --no-cache add build-base autoconf automake pkgconfig jansson-dev check-dev \
+    openssl-dev openssl libexecinfo-dev curl-dev libxml2-dev bsd-compat-headers rsync wget \
+    jansson libexecinfo git tini
+
+WORKDIR /root
+RUN git clone https://github.com/NICMx/FORT-validator.git
+WORKDIR /root/FORT-validator
+RUN git checkout ${GIT_BRANCH}
+
+# Compile and install FORT
+RUN sh autogen.sh && \
+    ./configure && \
+    make && \
+    make install
+
+#--- Final image ---
+FROM alpine:latest
+
+# Install dependencies
+RUN apk --update --no-cache add openssl jansson rsync libexecinfo curl-dev libxml2-dev tini
+
+# Create required directories
+RUN mkdir -p /etc/fort/tal
+
+# Install FORT binaries
+COPY --from=builder /usr/local/bin/fort /usr/local/bin/fort
+COPY --from=builder /usr/local/share/man/man8/fort.8 /usr/local/share/man/man8/fort.8
+COPY --from=builder /root/FORT-validator/fort_setup.sh /etc/fort/fort_setup.sh
+
+WORKDIR /etc/fort
+RUN echo "yes" | sh fort_setup.sh tal
+
+# Now the tals are located at /etc/fort/tal
+# The local-repository is at /var/cache/fort/repository
+
+# Run FORT via TINI, use the created conf file by fort_setup.sh
+EXPOSE 323
+ENTRYPOINT ["tini", "-g", "--", "fort", "--configuration-file", "/etc/fort/fort-config.json"]
