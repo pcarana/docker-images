@@ -5,7 +5,7 @@ pipeline {
     stages {
         stage("Get local source") {
             steps {
-                sh 'mkdir source'
+                sh 'mkdir -p source'
                 sh 'cp -r $SOURCE_DIR source'
             }
             post {
