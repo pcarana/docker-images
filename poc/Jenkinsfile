@@ -1,0 +1,35 @@
+pipeline {
+
+    agent any
+
+    stages {
+        stage("Get local source") {
+            steps {
+                sh 'mkdir source'
+                sh 'cp -r $SOURCE_DIR source'
+            }
+            post {
+                failure {
+                    sh 'echo "Error getting source'
+                }
+            }
+        }
+        stage("Build GCC 10") {
+            agent {
+                docker {
+                    label 'docker'
+                    image 'debian-gcc10:latest'
+                    args '-v source:/source'
+                }
+            }
+            steps {
+                sh 'echo OK'
+            }
+            post {
+                failure {
+                    sh 'echo "Error building with gcc'
+                }
+            }
+        }
+    }
+}
