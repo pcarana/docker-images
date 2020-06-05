@@ -28,6 +28,7 @@ pipeline {
             post {
                 failure {
                     sh 'echo "Error building with gcc'
+                    sh 'rm -Rf source'
                 }
             }
         }
