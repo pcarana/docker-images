@@ -7,12 +7,14 @@ Each directory has distinct goals, the summary is:
 - [**Docker-FRRRPKI:**](Docker-FRRRPKI) run an FRR container to test RTR server-client interaction.
 - [**Docker-jekyll:**](Docker-jekyll) run a Jekyll container to build the docs.
 - [**Docker-rsync:**](Docker-rsync) run an RSYNC server, mainly to act as local RPKI repository.
+- [**dockercompose:**](dockercompose) run a docker-compose file where a FORT, FRR, and RSYNC containers interact with each other.
+- [**Jenkins-data:**](Jenkins-data) backup of the Jenkins jobs created as part of this POC.
 
 There are 2 dockerfiles:
 - `Dockerfile-CompileRun`: is a FORT image, built using alpine base.
 - `Dockerfile-CompileRun-OpenSUSE`: is a FORT image, build using OpenSUSE base.
 
-I've experienced some random issues using the alpine base (still need more time and patiente to know what's going on), so I've decided to better use the OpenSUSE base.
+I've experienced some random issues using the alpine base (still need more time and patience to know what's going on), so I've decided to better use the OpenSUSE base.
 
 To build FORT as a docker image (by default pointing to branch 1.3.0):
 

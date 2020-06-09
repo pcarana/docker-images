@@ -1,0 +1,10 @@
+Started on Jun 4, 2020, 12:22:55 PM
+Using strategy: Default
+[poll] Last Built Revision: Revision f6c304640cae62deae4ca99b9f1f3d319740af9e (refs/remotes/origin/master)
+No credentials specified
+ > git --version # timeout=10
+ > git ls-remote -h -- https://github.com/pcarana/FORT-validator.git # timeout=10
+Found 2 remote heads on https://github.com/pcarana/FORT-validator.git
+[poll] Latest remote head revision on refs/heads/master is: 9378042ff283ea79cd14e930c2472f69d5ef02d5
+Done. Took 0.37 sec
+Changes found

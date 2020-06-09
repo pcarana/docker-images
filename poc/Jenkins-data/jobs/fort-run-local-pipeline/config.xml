@@ -1,0 +1,112 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.39">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.7.0"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.7.0">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>SOURCE_DIR</name>
+          <description></description>
+          <defaultValue>/home/pcarana/git/FORT-validator</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SOURCE_TALS</name>
+          <description></description>
+          <defaultValue>/home/pcarana/git/FORT-validator/examples/tal</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>EXPECTED_VALID_PREFIXES</name>
+          <description>Minimum valid prefixes that should result from the validation (this should increase over time).</description>
+          <defaultValue>150000</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TMP_SERVER_PORT</name>
+          <description>Host port where the RTR server will be temporarily bound to.</description>
+          <defaultValue>8393</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.80">
+    <script>pipeline {
+    environment {
+        SOURCE = &quot;${SOURCE_DIR}&quot;
+        TALS = &quot;${SOURCE_TALS}&quot;
+        VALID_PREFIXES = &quot;${EXPECTED_VALID_PREFIXES}&quot;
+        LOCAL_REPO = &quot;/tmp/${BUILD_TAG}&quot;
+        SERVER_MAX_RUNS = 2;
+        SERVER_PORT = &quot;${TMP_SERVER_PORT}&quot;
+    }
+    
+    agent any
+    
+    stages {
+        stage(&quot;Compile local code&quot;) {
+            steps {
+                sh &apos;mkdir -p source&apos;
+                sh &apos;cp -r $SOURCE/* source&apos;
+                sh &apos;cd source &amp;&amp; ./autogen.sh &gt;/dev/null &amp;&amp; ./configure &gt;/dev/null &amp;&amp; make &gt;/dev/null&apos;
+                sh &apos;mv source/src/fort l_fort&apos;
+                sh &apos;cp $HOME/personal_data/server_health_check.sh server_health_check.sh&apos;
+            }
+        }
+        stage(&quot;Run as standalone&quot;) {
+            steps {
+                sh &apos;./l_fort --tal $TALS --mode=standalone --log.level=info --log.output=console --local-repository=$LOCAL_REPO --validation-log.enabled &gt; standalone.log 2&gt; standalone_err.log&apos;
+                sh &apos;grep &quot;Valid Prefixes&quot; standalone.log | awk -v VALID=$VALID_PREFIXES \&apos;{ print $0; if ($NF &lt; VALID) { exit 1; } }\&apos;&apos;
+            }
+            post {
+                failure {
+                    echo &quot;The valid prefixes are lesser than expected.&quot;
+                    sh &apos;grep &quot;Valid Prefixes&quot; standalone.log&apos;
+                    sh &apos;cat standalone_err.log&apos;
+                }
+            }
+        }
+        stage(&quot;Server execution&quot;) {
+            steps {
+                sh &apos;./l_fort --tal $TALS --server.port=$SERVER_PORT --log.level=info --log.output=console --local-repository=$LOCAL_REPO --validation-log.enabled --server.interval.validation=60 &gt; server_1.log 2&gt; server_1_err.log &amp;&apos;
+            }
+        }
+        stage(&quot;Health check&quot;) {
+            steps {
+                retry(10) {
+                    sleep 60
+                    sh &apos;./server_health_check.sh server_1.log $SERVER_MAX_RUNS&apos;
+                    echo &quot;Server has successfully completed $SERVER_MAX_RUNS runs.&quot;
+                }
+            }
+            post {
+                failure {
+                    echo &quot;Server health check failed.&quot;
+                    echo &quot;See the stdout log at $WORKSPACE/server_1.log.&quot;
+                    echo &quot;And the stderr log at $WORKSPACE/server_1_err.log.&quot;
+                }
+            }
+        }
+        stage(&quot;Cleanup&quot;) {
+            steps {
+                sh &apos;rm -Rf $LOCAL_REPO source server_health_check.sh&apos;
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

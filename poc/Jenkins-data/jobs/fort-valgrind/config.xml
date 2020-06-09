@@ -1,0 +1,76 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>SOURCE_DIR</name>
+          <description></description>
+          <defaultValue>/home/pcarana/git/FORT-validator</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>mkdir -p source
+cp -r $SOURCE_DIR/* source
+cd source &amp;&amp; ./autogen.sh &gt;/dev/null &amp;&amp; ./configure &gt;/dev/null &amp;&amp; make &gt;/dev/null</command>
+    </hudson.tasks.Shell>
+    <org.jenkinsci.plugins.valgrind.ValgrindBuilder plugin="valgrind@0.28">
+      <valgrindExecutable></valgrindExecutable>
+      <workingDirectory>${WORKSPACE}</workingDirectory>
+      <includePattern>**/*fort</includePattern>
+      <excludePattern></excludePattern>
+      <outputDirectory>${WORKSPACE}</outputDirectory>
+      <outputFileEnding>.report</outputFileEnding>
+      <programOptions>--mode=standalone --tal ${WORKSPACE}/source/examples/tal --local-repository /tmp/${BUILD_TAG} --log.level info --validation-log.level info --validation-log.enabled</programOptions>
+      <tool class="org.jenkinsci.plugins.valgrind.ValgrindBuilder$ValgrindToolMemcheck">
+        <showReachable>false</showReachable>
+        <undefinedValueErrors>false</undefinedValueErrors>
+        <leakCheckLevel>full</leakCheckLevel>
+        <trackOrigins>false</trackOrigins>
+      </tool>
+      <valgrindOptions></valgrindOptions>
+      <ignoreExitCode>false</ignoreExitCode>
+      <traceChildren>false</traceChildren>
+      <childSilentAfterFork>false</childSilentAfterFork>
+      <generateSuppressions>false</generateSuppressions>
+      <suppressionFiles></suppressionFiles>
+      <removeOldReports>false</removeOldReports>
+    </org.jenkinsci.plugins.valgrind.ValgrindBuilder>
+    <hudson.tasks.Shell>
+      <command>rm -Rf source</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jenkinsci.plugins.valgrind.ValgrindPublisher plugin="valgrind@0.28">
+      <valgrindPublisherConfig>
+        <pattern>*.report</pattern>
+        <failThresholdInvalidReadWrite>0</failThresholdInvalidReadWrite>
+        <failThresholdDefinitelyLost>0</failThresholdDefinitelyLost>
+        <failThresholdTotal>0</failThresholdTotal>
+        <unstableThresholdInvalidReadWrite></unstableThresholdInvalidReadWrite>
+        <unstableThresholdDefinitelyLost></unstableThresholdDefinitelyLost>
+        <unstableThresholdTotal></unstableThresholdTotal>
+        <sourceSubstitutionPaths></sourceSubstitutionPaths>
+        <publishResultsForAbortedBuilds>true</publishResultsForAbortedBuilds>
+        <publishResultsForFailedBuilds>true</publishResultsForFailedBuilds>
+        <failBuildOnMissingReports>true</failBuildOnMissingReports>
+        <failBuildOnInvalidReports>true</failBuildOnInvalidReports>
+      </valgrindPublisherConfig>
+    </org.jenkinsci.plugins.valgrind.ValgrindPublisher>
+  </publishers>
+  <buildWrappers/>
+</project>
