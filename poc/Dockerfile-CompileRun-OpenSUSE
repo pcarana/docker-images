@@ -1,0 +1,52 @@
+#--- Alpine build container ---
+FROM opensuse/leap:latest AS builder
+ARG TINI_VER=0.18.0
+ARG GIT_BRANCH="1.3.0"
+
+# Install compiler and dependencies
+RUN zypper --non-interactive --quiet install autoconf pkgconfig automake gcc libopenssl-devel libjansson-devel \
+    make libcurl-devel libxml2-devel check git
+
+# Download FORT source code
+WORKDIR /home/root
+RUN git clone https://github.com/NICMx/FORT-validator.git /home/root && git checkout ${GIT_BRANCH}
+
+# Compile and install FORT
+RUN ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install
+
+#--- Final image ---
+FROM opensuse/leap:latest
+ARG TINI_VER=0.18.0
+
+RUN zypper --non-interactive install rsync libopenssl-devel libjansson-devel libcurl-devel libxml2-devel
+
+ADD https://github.com/krallin/tini/releases/download/v${TINI_VER}/tini /tini
+RUN chmod +x /tini
+
+# Create required directories
+RUN mkdir -p /etc/fort/tal && mkdir -p /var/cache/fort/repository
+
+# Install FORT binaries
+COPY --from=builder /usr/local/bin/fort /usr/local/bin/fort
+COPY --from=builder /usr/local/share/man/man8/fort.8 /usr/local/share/man/man8/fort.8
+
+WORKDIR /etc/fort
+RUN echo '{"tal":"/etc/fort/tal","local-repository":"/var/cache/fort/repository"}' > /etc/fort/fort-config.json
+
+ENV GITHUB_TALS=https://raw.githubusercontent.com/NICMx/FORT-validator/master/examples/tal
+
+ADD ${GITHUB_TALS}/lacnic.tal /etc/fort/tal
+ADD ${GITHUB_TALS}/afrinic.tal /etc/fort/tal
+ADD ${GITHUB_TALS}/ripe.tal /etc/fort/tal
+ADD ${GITHUB_TALS}/apnic.tal /etc/fort/tal
+ADD https://www.arin.net/resources/manage/rpki/arin-rfc7730.tal /etc/fort/tal
+
+# Now the tals are located at /etc/fort/tal
+# The local-repository is at /var/cache/fort/repository
+
+# Run FORT via TINI
+EXPOSE 323
+ENTRYPOINT ["/tini", "-g", "--", "fort", "--configuration-file", "/etc/fort/fort-config.json"]

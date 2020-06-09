@@ -1,0 +1,49 @@
+version: '3'
+services:
+  rsync-server:
+    image: 'nicmxlabs/rsync'
+    volumes:
+      - '$PWD/rsync-config/repository/:/home/rsync/'
+      - '$PWD/rsync-config/rsyncd.conf:/etc/rsyncd.conf'
+    networks:
+      default:
+        aliases:
+          - rpki.example.mx
+          - test.lir.test
+
+  fort-server:
+    image: 'fort:1.3.0'
+    ports:
+      - "8323:323"
+    volumes:
+      - "$PWD/fort-config/test-fort-conf:/etc/fort/tal"
+      - "$PWD/fort-config/docker-fort-config.json:/etc/fort/fort-config.json"
+      - "$PWD/fort-config/repo/:/var/cache/fort/repository"
+    networks:
+      default:
+        aliases:
+          - fort.test
+    depends_on:
+      - rsync-server
+
+  router-frr:
+    image: 'frrouting/frr'
+    volumes:
+      - "$PWD/frr-config/:/etc/frr/"
+    privileged: true
+    networks:
+      default:
+        aliases:
+          - frr.test
+    depends_on:
+      - rsync-server
+      - fort-server
+
+
+
+#networks:
+#  fort_net:
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: "172.16.238.0/24"

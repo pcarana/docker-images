@@ -1,0 +1,23 @@
+{
+  "local-repository": "/var/cache/fort/repository",
+  "tal": "/etc/fort/tal/taller.tal",
+  "log": {
+    "enabled": true,
+    "color-output": true,
+    "file-name-format": "global-url",
+    "output": "console",
+    "level": "debug",
+    "prefix": "OP",
+    "facility": "local1"
+  },
+  "validation-log": {
+    "enabled": true,
+    "color-output": true,
+    "file-name-format": "global-url",
+    "output": "console",
+    "level": "info",
+    "prefix": "VAL",
+    "facility": "local2"
+  },
+  "work-offline":false
+}
