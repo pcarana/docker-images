@@ -3,7 +3,8 @@ FROM debian:latest
 
 RUN apt-get update && \
     apt-get install -y autoconf automake git libjansson-dev libssl-dev \
-    pkg-config rsync libcurl4-openssl-dev libxml2-dev build-essential llvm clang
+    pkg-config rsync libcurl4-openssl-dev libxml2-dev libmicrohttpd-dev \
+    build-essential llvm clang
 
 # Volume that must be mounted, it must contain the source code
 VOLUME "/source"

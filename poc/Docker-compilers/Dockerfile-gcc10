@@ -4,7 +4,7 @@ FROM debian:latest
 RUN apt-get update && \
     apt-get install -y apt-utils && \
     apt-get install -y autoconf automake git libjansson-dev libssl-dev \
-    pkg-config rsync libcurl4-openssl-dev libxml2-dev
+    libmicrohttpd-dev pkg-config rsync libcurl4-openssl-dev libxml2-dev
 
 # Do while GCC 10 isn't stable
 RUN printf "\ndeb http://deb.debian.org/debian/ experimental main\ndeb http://deb.debian.org/debian/ sid main\n" >> /etc/apt/sources.list && \
